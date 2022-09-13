@@ -88,84 +88,13 @@ class Freeshippingprogress extends Module
             $this->postProcess();
         }
 
-        $this->context->smarty->assign('module_dir', $this->_path);
-
-        $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
-
-        return $output.$this->renderForm();
-    }
-
-    /**
-     * Create the form that will be displayed in the configuration of your module.
-     */
-    protected function renderForm()
-    {
-        $helper = new HelperForm();
-
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
-        $helper->module = $this;
-        $helper->default_form_language = $this->context->language->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
-
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitFreeshippingprogressModule';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-
-        $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
-            'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id,
-        );
-
-        return $helper->generateForm(array($this->getConfigForm()));
-    }
-
-    /**
-     * Create the structure of your form.
-     */
-    protected function getConfigForm()
-    {
-        return array(
-            'form' => array(
-                'legend' => array(
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'label' => $this->l('Enter amount to reach'),
-                        'name' => 'FREESHIPPINGPROGRESS_PRICE',
-                    ),
-                    array(
-                        'type' => 'file',
-                        'name' => 'FREESHIPPINGPROGRESS_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
-                        'name' => 'FREESHIPPINGPROGRESS_IMG_LINK'
-                    ),
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
-            ),
-        );
-    }
-
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
-    {
-        return array(
-            'FREESHIPPINGPROGRESS_LIVE_MODE' => Configuration::get('FREESHIPPINGPROGRESS_LIVE_MODE', true),
-            'FREESHIPPINGPROGRESS_ACCOUNT_EMAIL' => Configuration::get('FREESHIPPINGPROGRESS_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'FREESHIPPINGPROGRESS_ACCOUNT_PASSWORD' => Configuration::get('FREESHIPPINGPROGRESS_ACCOUNT_PASSWORD', null),
-        );
+        $this->context->smarty->assign(['module_dir' => $this->_path,
+            'FREESHIPPINGPROGRESS_PRICE' => Configuration::get('FREESHIPPINGPROGRESS_PRICE'),
+            'FREESHIPPINGPROGRESS_IMG_LINK' => Configuration::get('FREESHIPPINGPROGRESS_IMG_LINK'),
+            'img' =>  '../modules/'.$this->name.'/views/img/'.Configuration::get('FREESHIPPINGPROGRESS_IMG_LINK'),
+        ]);
+        
+        return $this->display(__FILE__, 'views/templates/admin/configure.tpl');        
     }
 
     /**
@@ -173,21 +102,26 @@ class Freeshippingprogress extends Module
      */
     protected function postProcess()
     {
-        $form_values = $this->getConfigFormValues();
-
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+        if (isset($_FILES['FREESHIPPINGPROGRESS_IMG_LINK']) && isset($_FILES['FREESHIPPINGPROGRESS_IMG_LINK']['size']) && $_FILES['FREESHIPPINGPROGRESS_IMG_LINK']['size'] > 0) {
+            if ($error = ImageManager::validateUpload($_FILES['FREESHIPPINGPROGRESS_IMG_LINK'], 4000000)) {
+                return $this->displayError($this->l('Invalid image.'));
+            } else {
+                $ext = Tools::substr($_FILES['FREESHIPPINGPROGRESS_IMG_LINK']['name'], strrpos($_FILES['FREESHIPPINGPROGRESS_IMG_LINK']['name'], '.') + 1);
+                //$file_name = md5($_FILES['STORE_LOCATOR_IMG']['name']) . '.' . $ext;
+                if (!move_uploaded_file($_FILES['FREESHIPPINGPROGRESS_IMG_LINK']['tmp_name'], dirname(__FILE__) . '/views/img/img2.' . $ext)) {
+                    return $this->displayError($this->l('An error occurred while attempting to upload the file.'));
+                } else{
+                    @unlink(dirname(__FILE__) . '/views/img/' . Configuration::get('FREESHIPPINGPROGRESS_IMG_LINK'));
+                    rename(dirname(__FILE__) . '/views/img/img2.' . $ext,dirname(__FILE__) . '/views/img/img.' . $ext);
+                    Configuration::updateValue('FREESHIPPINGPROGRESS_IMG_LINK', 'img.' . $ext);
+                    ImageManager::resize(dirname(__FILE__) . '/views/img/' .Configuration::get('FREESHIPPINGPROGRESS_IMG_LINK'), dirname(__FILE__) . '/views/img/' .Configuration::get('FREESHIPPINGPROGRESS_IMG_LINK'), 30, 30, $ext);
+                }
+            }
         }
-    }
-
-    /**
-    * Add the CSS & JavaScript files you want to be loaded in the BO.
-    */
-    public function hookBackOfficeHeader()
-    {
-        if (Tools::getValue('module_name') == $this->name) {
-            $this->context->controller->addJS($this->_path.'views/js/back.js');
-            $this->context->controller->addCSS($this->_path.'views/css/back.css');
+        if(is_nan(Tools::getValue('FREESHIPPINGPROGRESS_PRICE')) !== false){
+            return $this->displayError($this->l('Amount format is not valid'));
+        } else {
+            Configuration::updateValue('FREESHIPPINGPROGRESS_PRICE', str_replace(',', '.', Tools::getValue('FREESHIPPINGPROGRESS_PRICE')));
         }
     }
 
