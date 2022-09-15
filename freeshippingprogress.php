@@ -130,12 +130,27 @@ class Freeshippingprogress extends Module
      */
     public function hookHeader()
     {
-        $this->context->controller->addJS($this->_path.'/views/js/front.js');
-        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+        if($this->context->controller->php_self == 'cart'){
+            $this->context->controller->addJS($this->_path.'/views/js/front.js');
+            $this->context->controller->addCSS($this->_path.'/views/css/front.css');
+        }
     }
 
-    public function hookDisplayShoppingCart()
+    public function hookDisplayShoppingCart($params)
     {
-        /* Place your code here. */
+
+        $config = Configuration::getMultiple(['FREESHIPPINGPROGRESS_PRICE', 'FREESHIPPINGPROGRESS_IMG_LINK']);
+        /*$currentTotal = (float)str_replace(',','.', Cart::getTotalCart($params['cart']->id));
+        $totalToReach = $config['FREESHIPPINGPROGRESS_PRICE'];
+        $percent = $currentTotal/(float)$totalToReach*100;
+        $percent = ($percent >= 100 ? 100 : substr($percent, 0, 5));
+        dump($percent);*/
+       // dump($params);
+        $this->context->smarty->assign([
+            'totalToReach' => $config['FREESHIPPINGPROGRESS_PRICE'],
+            'progress_img' => '../modules/'.$this->name.'/views/img/'.$config['FREESHIPPINGPROGRESS_IMG_LINK'],
+        ]);
+    
+        return $this->display(__FILE__, 'views/templates/front/hook/progress_bar.tpl');        
     }
 }
