@@ -25,3 +25,30 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
+//alert($totalToReach);
+
+
+$('.cart-progress').insertAfter(".separator");
+const animal = document.querySelector('#js-animal');
+const progressBar = document.querySelector('#js-progressbar');
+const goal = totalToReach;
+updateProgressbar(parseFloat($('.cart-total > .value').text().replace(',', '.')));
+prestashop.on('updatedCart', function(event) { 
+    updateProgressbar(parseFloat($('.cart-total > .value').text().replace(',', '.')));
+});
+function updateProgressbar(actualAmount) {
+    var percent = actualAmount / goal * 100;
+    console.log(typeof (percent));
+//    percent = (percent >= 100 ? 100 : percent.substring(0, 5));
+    percent = (percent >= 100 ? 100 : Math.round(percent));
+    animal.style.setProperty('--move', percent + '%');
+    progressBar.value = percent;
+    let txt;
+    if (percent == 100) {
+        txt = 'Livraison gratuite disponible';
+    } else {
+        txt = Math.round((goal - actualAmount)*100)/100 + ' € restants pour la livraison gratuite !';
+    }
+    $('.progress-text').text(txt);
+    //https://codepen.io/pierrinho/pen/VVGezJ
+}

@@ -25,7 +25,9 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
-
+:root {
+  --move: 0;
+}
 .progress {
     position: relative;
     width: 100%;
@@ -70,7 +72,11 @@
       transform: scaleX(-1);
       font-size: 4rem;
       z-index: 1;
-      top: -5px;
+      top: -8px;
+    }
+    .cart-progress{
+      padding:10px;
+
     }
   
   
